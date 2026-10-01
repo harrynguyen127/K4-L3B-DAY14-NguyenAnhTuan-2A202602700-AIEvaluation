@@ -30,11 +30,11 @@ critical.
 
 | Metric | Acceptable Low Score Scenario | Critical Low Score Scenario | Action Required |
 |---|---|---|---|
-| Faithfulness | | | |
-| Answer Relevance | | | |
-| Context Recall | | | |
-| Context Precision | | | |
-| Completeness | | | |
+| Faithfulness | Câu trả lời chứa lời chào, câu chuyển ý hoặc hướng dẫn chung không cần được chứng minh bởi context, nhưng mọi thông tin thực tế về sản phẩm và chính sách vẫn được context hỗ trợ. | Câu trả lời bịa giá bán, chính sách bảo hành, thời hạn đổi trả hoặc thông số sản phẩm không có trong tài liệu | Kiểm tra hallucination; cải thiện prompt yêu cầu chỉ trả lời từ context; bổ sung citation; từ chối trả lời khi thiếu bằng chứng. |
+| Answer Relevance | Câu trả lời hữu ích nhưng diễn đạt khác từ khóa trong câu hỏi, hoặc bổ sung một ít thông tin liên quan. | Câu trả lời không giải quyết yêu cầu chính, trả lời nhầm sản phẩm hoặc chuyển sang chủ đề khác. | Làm rõ intent; viết lại prompt; loại bỏ nội dung lan man; kiểm tra query understanding hoặc routing. |
+| Context Recall | Câu hỏi đơn giản và các chunks hiện có đã đủ để trả lời, dù không bao phủ toàn bộ expected answer dài. | Retriever bỏ sót điều kiện quan trọng như ngoại lệ bảo hành, phí hoàn trả hoặc bước bắt buộc trong quy trình. | Cải thiện query rewriting; tăng top_k; chunking lại tài liệu; bổ sung metadata/filter; kiểm tra corpus có thiếu dữ liệu không.|
+| Context Precision | Retriever lấy thêm một số chunks nhiễu, nhưng chunk đúng vẫn nằm ở đầu và generator vẫn tạo câu trả lời chính xác. | Phần lớn chunks không liên quan hoặc bằng chứng đúng nằm quá thấp, khiến model dùng nhầm tài liệu. | Thêm reranking; cải thiện embedding và metadata filter; giảm top_k; loại bỏ tài liệu trùng hoặc lỗi thời. |
+| Completeness | Câu trả lời đã bao phủ hầu hết các khía cạnh quan trọng, dù có thể thiếu một số chi tiết nhỏ. | Câu trả lời bỏ sót các phần quan trọng, dẫn đến thông tin không đầy đủ hoặc gây hiểu lầm. | Cải thiện retrieval để lấy đủ context; tăng top_k; kiểm tra chunking; bổ sung metadata/filter; đảm bảo corpus đầy đủ. |
 
 ### Exercise 1.2 — Bias trong LLM-as-a-Judge
 
@@ -46,15 +46,15 @@ Ba bias thường gặp:
 
 **Câu 1: Thiết kế experiment phát hiện position bias với ít nhất hai conditions.**
 
-> *Câu trả lời:*
+> Chuẩn bị nhiều cặp câu trả lời A/B cho cùng một tập câu hỏi và chạy judge trong hai conditions: Condition 1 hiển thị A trước B; Condition 2 đảo lại thành B trước A. Các yếu tố khác như model, rubric, prompt và temperature phải được giữ nguyên. Ghi lại lựa chọn và điểm của judge, sau đó tính tỷ lệ answer đứng đầu được chọn và tỷ lệ kết quả bị đảo khi đổi thứ tự. Nếu cùng một answer thường nhận điểm cao hơn khi đứng đầu, hoặc judge thường chọn answer đầu tiên bất kể đó là A hay B, judge có position bias. Nên randomize thứ tự giữa các test case và dùng đủ nhiều mẫu để tránh kết luận từ vài trường hợp ngẫu nhiên.
 
 **Câu 2: Làm thế nào giảm verbosity bias bằng rubric design?**
 
-> *Câu trả lời:*
+> Rubric phải chấm theo các yêu cầu nội dung cụ thể, không dùng độ dài làm tín hiệu chất lượng. Mỗi dimension như correctness, completeness, relevance và actionability cần có tiêu chuẩn riêng. Completeness được xác định bằng việc answer có bao phủ các key facts bắt buộc hay không, chứ không phải số từ. Rubric cần ghi rõ không cộng điểm cho nội dung dài, ví dụ không cần thiết hoặc cách diễn đạt hoa mỹ; đồng thời trừ điểm nếu answer lặp lại, lan man hoặc chứa thông tin không liên quan. Judge nên chấm từng dimension độc lập trước khi tính điểm tổng. Vì vậy, một câu trả lời ngắn nhưng đúng và đủ có thể đạt điểm cao hơn câu trả lời dài nhưng có nhiều nội dung thừa.
 
 **Câu 3: Tại sao cần calibrate LLM judge với human labels?**
 
-> *Câu trả lời:*
+> Việc calibrate LLM judge với human labels giúp đảm bảo rằng các đánh giá của model phản ánh đúng quan điểm và tiêu chuẩn của con người. Điều này giúp giảm bias, tăng độ tin cậy và tính công bằng trong quá trình đánh giá, đồng thời cải thiện khả năng áp dụng các kết quả đánh giá vào thực tế.
 
 ### Exercise 1.3 — Evaluation trong CI/CD
 
@@ -62,13 +62,13 @@ Ba bias thường gặp:
 
 | Metric | Threshold | Lý do |
 |---|---:|---|
-| Faithfulness | | |
-| Answer Relevance | | |
-| Completeness | | |
+| Faithfulness | 0.70 | Đây là metric quan trọng nhất vì điểm thấp nghĩa là câu trả lời có thông tin không được context hỗ trợ, có nguy cơ hallucination. Block deployment nếu trung bình dưới 0.70. |
+| Answer Relevance | 0.60 | Câu trả lời dưới mức này thường không giải quyết đúng ý định của người dùng hoặc chứa nhiều nội dung không liên quan. |
+| Completeness | 0.6 | Câu trả lời dưới mức này thường không bao phủ đủ các key facts bắt buộc. |
 
 **Câu 2: Khi nào dùng offline evaluation, online evaluation và human review?**
 
-> *Câu trả lời:*
+> Offline evaluation nên được dùng để kiểm tra chất lượng model trên các tập dữ liệu đã chuẩn bị sẵn, giúp phát hiện lỗi và điều chỉnh trước khi triển khai. Online evaluation (A/B testing) được dùng để đánh giá model trong môi trường thực tế, đo lường hiệu quả thực sự đối với người dùng. Human review cần thiết khi các metric tự động không đủ để đánh giá chất lượng, đặc biệt với các câu trả lời phức tạp hoặc nhạy cảm. Kết hợp cả ba phương pháp giúp đảm bảo chất lượng và giảm rủi ro khi triển khai model.
 
 ---
 
