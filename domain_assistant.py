@@ -21,7 +21,8 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from dotenv import load_dotenv
-from openai import OpenAI, OpenAIError
+from google import genai
+from google.genai import errors, types
 
 load_dotenv(Path(__file__).resolve().with_name(".env"))
 
@@ -242,27 +243,39 @@ class TextGenerator(Protocol):
     def generate(self, prompt: str) -> str: ...
 
 
-class OpenAIGenerator:
+class GeminiGenerator:
     def __init__(self, max_output_tokens: int = 300) -> None:
-        api_key = os.getenv("OPENAI_API_KEY", "").strip()
-        self.model = os.getenv("OPENAI_MODEL", "").strip()
+        api_key = os.getenv("GEMINI_API_KEY", "").strip()
+        self.model = os.getenv("GEMINI_MODEL", "").strip()
         if not api_key:
-            raise RuntimeError("OPENAI_API_KEY is missing from .env")
+            raise RuntimeError("GEMINI_API_KEY is missing from .env")
         if not self.model:
-            raise RuntimeError("OPENAI_MODEL is missing from .env")
-        self.client = OpenAI(api_key=api_key)
+            raise RuntimeError("GEMINI_MODEL is missing from .env")
+        self.client = genai.Client(api_key=api_key)
         self.max_output_tokens = max_output_tokens
 
     def generate(self, prompt: str) -> str:
-        response = self.client.responses.create(
-            model=self.model,
-            input=prompt,
-            temperature=0,
-            max_output_tokens=self.max_output_tokens,
-        )
-        answer = response.output_text.strip()
+        retry_delays = (2, 4, 8, 16)
+        for attempt in range(len(retry_delays) + 1):
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0,
+                        max_output_tokens=self.max_output_tokens,
+                    ),
+                )
+                answer = (response.text or "").strip()
+                break
+            except errors.APIError as exc:
+                if exc.code not in {429, 500, 502, 503, 504} or attempt == len(retry_delays):
+                    raise RuntimeError(f"Gemini request failed: {exc}") from exc
+                time.sleep(retry_delays[attempt])
+            except Exception as exc:
+                raise RuntimeError(f"Gemini request failed: {exc}") from exc
         if not answer:
-            raise RuntimeError("OpenAI returned an empty answer")
+            raise RuntimeError("Gemini returned an empty answer")
         return answer
 
 
@@ -299,7 +312,7 @@ class DomainAssistant:
         return cls(
             corpus_id,
             BM25Retriever(chunks),
-            generator if generator is not None else OpenAIGenerator(),
+            generator if generator is not None else GeminiGenerator(),
             top_k,
         )
 
@@ -508,7 +521,7 @@ def main() -> int:
             json.dumps(artifact, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
-    except (OSError, OpenAIError, TypeError, ValueError, RuntimeError) as exc:
+    except (OSError, TypeError, ValueError, RuntimeError) as exc:
         print(f"ERROR: {exc}")
         return 2
     print(f"Generated {len(artifact['answers'])} actual answers: {output}")

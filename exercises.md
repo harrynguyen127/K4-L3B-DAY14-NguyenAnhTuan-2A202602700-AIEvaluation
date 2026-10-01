@@ -188,47 +188,53 @@ Copy bảng terminal vào đây hoặc điền từ `artifacts/benchmark_results
 
 | ID | Question (short) | Ctx Recall | Ctx Precision | Faithfulness | Relevance | Completeness | Overall | Passed? | Failure Type |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|
-| E01 | | | | | | | | | |
-| E02 | | | | | | | | | |
-| E03 | | | | | | | | | |
-| E04 | | | | | | | | | |
-| E05 | | | | | | | | | |
-| M01 | | | | | | | | | |
-| M02 | | | | | | | | | |
-| M03 | | | | | | | | | |
-| M04 | | | | | | | | | |
-| M05 | | | | | | | | | |
-| M06 | | | | | | | | | |
-| M07 | | | | | | | | | |
-| H01 | | | | | | | | | |
-| H02 | | | | | | | | | |
-| H03 | | | | | | | | | |
-| H04 | | | | | | | | | |
-| H05 | | | | | | | | | |
-| A01 | | | | | | | | | |
-| A02 | | | | | | | | | |
-| A03 | | | | | | | | | |
+| E01 | NovaBook charging adapter | 1.000 | 0.887 | 0.318 | 0.667 | 0.692 | 0.559 | No | off_topic |
+| E02 | Online order creation | 0.882 | 0.950 | 0.800 | 1.000 | 0.882 | 0.894 | Yes | - |
+| E03 | OrbitPlus annual cost | 0.833 | 0.950 | 0.833 | 0.429 | 1.000 | 0.754 | No | off_topic |
+| E04 | Standard shipping time | 0.733 | 1.000 | 0.519 | 0.600 | 0.800 | 0.640 | Yes | - |
+| E05 | AeroBuds warranty period | 1.000 | 1.000 | 0.400 | 0.600 | 1.000 | 0.667 | No | off_topic |
+| M01 | OrbitPay instalment terms | 0.750 | 1.000 | 0.720 | 0.833 | 0.708 | 0.754 | Yes | - |
+| M02 | Cancel order in Packing | 0.963 | 1.000 | 0.543 | 0.571 | 0.889 | 0.668 | Yes | - |
+| M03 | OrbitPlus refund conditions | 0.917 | 0.804 | 0.783 | 0.917 | 0.542 | 0.747 | Yes | - |
+| M04 | Delayed shipment and trace | 0.903 | 0.589 | 0.800 | 0.909 | 0.677 | 0.796 | Yes | - |
+| M05 | Opened defective return | 0.842 | 1.000 | 0.917 | 0.824 | 0.632 | 0.791 | Yes | - |
+| M06 | Compromised account/order | 0.955 | 0.950 | 0.605 | 0.615 | 0.955 | 0.725 | Yes | - |
+| M07 | Repair and diagnosis times | 0.935 | 0.867 | 1.000 | 0.750 | 0.935 | 0.895 | Yes | - |
+| H01 | Pre-Sept return policy | 0.923 | 1.000 | 0.750 | 0.609 | 0.808 | 0.722 | Yes | - |
+| H02 | Opened defective v2 return | 0.889 | 1.000 | 0.700 | 0.857 | 0.815 | 0.791 | Yes | - |
+| H03 | Bundle refund deductions | 0.800 | 1.000 | 0.784 | 0.652 | 0.760 | 0.732 | Yes | - |
+| H04 | Warranty without proof | 0.969 | 1.000 | 0.941 | 0.588 | 0.875 | 0.801 | Yes | - |
+| H05 | Unavailable repair part | 0.833 | 1.000 | 0.900 | 0.647 | 0.417 | 0.655 | No | off_topic |
+| A01 | Out-of-scope medical request | 0.286 | 0.583 | 0.067 | 0.000 | 0.036 | 0.034 | No | hallucination |
+| A02 | Prompt injection | 0.750 | 1.000 | 0.714 | 0.556 | 0.583 | 0.618 | Yes | - |
+| A03 | False OrbitPlus premise | 0.958 | 1.000 | 0.706 | 0.692 | 1.000 | 0.799 | Yes | - |
 
 **Aggregate Report**
 
-- Overall pass rate: ____%
-- Avg Context Recall: ____
-- Avg Context Precision: ____
-- Avg Faithfulness: ____
-- Avg Relevance: ____
-- Avg Completeness: ____
-- Failure type distribution: ____
+- Overall pass rate: 75.0%
+- Avg Context Recall: 0.856
+- Avg Context Precision: 0.929
+- Avg Faithfulness: 0.690
+- Avg Relevance: 0.666
+- Avg Completeness: 0.750
+- Failure type distribution: `{"off_topic": 4, "hallucination": 1}`
 
 **Ba cases có Overall Score thấp nhất**
 
-1. ID: ____ | Score: ____ | Failure type: ____
-2. ID: ____ | Score: ____ | Failure type: ____
-3. ID: ____ | Score: ____ | Failure type: ____
+1. ID: A01 | Score: 0.034 | Failure type: hallucination
+2. ID: E01 | Score: 0.559 | Failure type: off_topic
+3. ID: A02 | Score: 0.618 | Failure type: none (passed)
 
 **Nhận xét ngắn:** Metric nào yếu nhất? Kết quả gợi ý vấn đề nằm ở retrieval
 hay generation?
 
-> *Câu trả lời:*
+> *Câu trả lời:* Relevance là answer-side metric yếu nhất (0.666), kế đến là
+> Faithfulness (0.690), trong khi Context Recall (0.856) và Context Precision
+> (0.929) đều cao. Vì vậy phần lớn vấn đề nằm ở generation và độ nhạy của heuristic
+> word-overlap, không phải retrieval tổng thể. Ngoại lệ rõ nhất là A01: retriever
+> không lấy `00_system_scope.md`, khiến recall chỉ 0.286 và generator không thể đưa
+> ra refusal đúng mẫu. Một số failure Easy như E01/E03/E05 thực tế trả lời đúng,
+> nhưng bị đánh trượt do paraphrase hoặc answer ngắn làm overlap score thấp.
 
 ### Exercise 3.3 — LLM-as-a-Judge Rubric Design
 
@@ -244,7 +250,7 @@ Chọn 3–5 dimensions:
 - [ ] Actionability
 - [x] Safety/privacy
 - [ ] Tone/clarity
-- [ ] Dimension khác: __________
+- [ ] Dimension khác: N/A
 
 | Score | Tiêu chí domain-specific | Ví dụ response |
 |---:|---|---|
@@ -336,8 +342,8 @@ Hoàn thành kiểm tra cuối trong khoảng 11:50–12:00.
 - [x] Tất cả required tests pass.
 - [x] `golden_dataset.json` validate thành công.
 - [x] Exercise 3.1 hoàn thành trong file JSON và bảng kết quả phía trên.
-- [ ] Exercise 3.2 có năm metrics, aggregate report và ba cases thấp nhất.
+- [x] Exercise 3.2 có năm metrics, aggregate report và ba cases thấp nhất.
 - [x] Exercise 3.3 có rubric 1–5 và bias controls.
-- [ ] `reflection.md` có ba failure analyses và regression strategy.
+- [x] `reflection.md` có ba failure analyses và regression strategy.
 - [x] Đã copy `template.py` thành `solution/solution.py`.
 - [ ] Exercise 3.4 và 3.5 chỉ làm nếu chọn bonus.
